@@ -1,7 +1,7 @@
 defmodule Pillar.TypeConvert.ToClickhouseJson do
   @moduledoc false
   def convert(param) when is_list(param) do
-    [Enum.map_join(param, ",", &convert/1)]
+    [Enum.map(param, &convert/1)]
   end
 
   def convert(param) when is_integer(param) do
