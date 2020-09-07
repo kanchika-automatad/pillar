@@ -20,29 +20,6 @@ defmodule Pillar.BulkInsertBuffer do
   # all this records will be inserted with 5 second interval
   ```
   """
-  alias Pillar.TypeConvert.ToClickhouseJson
-
-  def generate_insert_query(table_name, values) do
-    new_values = Enum.map(values, &convert_values_to_clickhouse/1)
-
-    sql_strings = [
-      "INSERT INTO",
-      table_name,
-      "FORMAT JSONEachRow",
-      Enum.join(Enum.map(new_values, &Jason.encode!/1), " ")
-    ]
-
-    Enum.join(sql_strings, "\n")
-  end
-
-  defp convert_values_to_clickhouse(map) do
-    map
-    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-    |> Enum.map(fn {key, value} ->
-      {key, ToClickhouseJson.convert(value)}
-    end)
-    |> Map.new()
-  end
 
   defmacro __using__(
              pool: pool_module,
@@ -52,10 +29,9 @@ defmodule Pillar.BulkInsertBuffer do
     quote do
       use GenServer
       import Supervisor.Spec
-      alias Pillar.BulkInsertBuffer
 
       def start_link(_any \\ nil) do
-        name = unquote(__MODULE__)
+        name = __MODULE__
         pool = unquote(pool_module)
         table_name = unquote(table_name)
         records = []
@@ -68,15 +44,15 @@ defmodule Pillar.BulkInsertBuffer do
       end
 
       def insert(data) when is_map(data) do
-        GenServer.call(unquote(__MODULE__), {:insert, data})
+        GenServer.cast(__MODULE__, {:insert, data})
       end
 
       def force_bulk_insert do
-        GenServer.call(unquote(__MODULE__), :do_insert)
+        GenServer.call(__MODULE__, :do_insert)
       end
 
       def records_for_bulk_insert() do
-        GenServer.call(unquote(__MODULE__), :records_for_bulk_insert)
+        GenServer.call(__MODULE__, :records_for_bulk_insert)
       end
 
       def handle_call(:do_insert, _from, state) do
@@ -85,8 +61,8 @@ defmodule Pillar.BulkInsertBuffer do
         {:reply, :ok, new_state}
       end
 
-      def handle_call({:insert, data}, _from, {pool, table_name, records} = state) do
-        {:reply, :ok, {pool, table_name, records ++ List.wrap(data)}}
+      def handle_cast({:insert, data}, {pool, table_name, records} = state) do
+        {:noreply, {pool, table_name, records ++ List.wrap(data)}}
       end
 
       def handle_call(
@@ -113,9 +89,7 @@ defmodule Pillar.BulkInsertBuffer do
       end
 
       defp do_bulk_insert({pool, table_name, records} = state) do
-        sql = BulkInsertBuffer.generate_insert_query(table_name, records)
-
-        {:ok, _} = pool.query(sql, %{})
+        pool.async_insert_to_table(table_name, records)
 
         {
           pool,
