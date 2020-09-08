@@ -17,9 +17,12 @@ defmodule Pillar.Pool.Worker do
     {:reply, result, connection}
   end
 
-  def handle_cast({command, query, params, options}, connection) do
-    {:ok, _result} = handle_command(connection, command, query, params, options)
-    {:noreply, connection}
+  def handle_call({command, query, params, options}, connection) do
+    result = handle_command(connection, command, query, params, options)
+    # {:noreply, connection}
+    # {:reply, connection, result}
+    {:reply, result, connection}
+
   end
 
   defp handle_command(connection, command, query, params, options)

@@ -20,7 +20,8 @@ defmodule Pillar do
     final_sql = QueryBuilder.insert_to_table(table_name, record_or_records)
     timeout = Map.get(options, :timeout, @default_timeout_ms)
 
-    execute_sql(connection, final_sql, timeout)
+    result = execute_sql(connection, final_sql, timeout)
+    result
   end
 
   def query(%Connection{} = connection, query, params \\ %{}, options \\ %{}) do
@@ -135,7 +136,7 @@ defmodule Pillar do
         :poolboy.transaction(
           unquote(name),
           fn pid ->
-            GenServer.cast(pid, {:insert_to_table, table_name, record_or_records, options})
+            GenServer.call(pid, {:insert_to_table, table_name, record_or_records, options})
           end,
           @pool_timeout_for_waiting_worker
         )
