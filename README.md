@@ -5,6 +5,13 @@ Clickhouse elixir driver via HTTP connection
 ![build](https://github.com/CatTheMagician/pillar/workflows/build/badge.svg?branch=master)
 ![hexpm](https://img.shields.io/hexpm/v/pillar.svg)
 
+
+#Specific Changes added by this fork:
+ - Converting Genserver cast to call for `execute_sql` function to get the errors thrown by clickhouse on bulk insert level
+ - Change the bulk insert done with `cron_like_records` event to maintain the list of entries.
+ - The application using this library will call bulk insert function and will be able to handle clickhouse specific errors
+
+
 # Features
 
   - [Direct Usage with connection structure](#direct-usage-with-connection-structure)
@@ -28,7 +35,7 @@ params = %{lastname: "Smith"}
 
 {:ok, result} = Pillar.query(conn, sql, params)
 
-result 
+result
 #=> [%{"count(*)" => 347}]
 
 ```
@@ -39,7 +46,7 @@ Recommended usage, because of limited connections and supervised workers
 
 ```elixir
   defmodule ClickhouseMaster do
-      use Pillar, 
+      use Pillar,
         connection_strings: [
           "http://user:password@host-master-1:8123/database",
           "http://user:password@host-master-2:8123/database"
@@ -100,7 +107,7 @@ But for launching them we have to write own task, like this:
 defmodule Mix.Tasks.MigrateClickhouse do
   use Mix.Task
   def run(_args) do
-    connection_string = Application.get_env(:my_project, :clickhouse_url)  
+    connection_string = Application.get_env(:my_project, :clickhouse_url)
     conn = Pillar.Connection.new(connection_string)
     Pillar.Migrations.migrate(conn)
   end

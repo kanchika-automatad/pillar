@@ -77,9 +77,10 @@ defmodule Pillar.BulkInsertBuffer do
       end
 
       def handle_info(:cron_like_records, state) do
-        new_state = do_bulk_insert(state)
+        # new_state = do_bulk_insert(state)
+        IO.inspect(state)
         schedule_work()
-        {:noreply, new_state}
+        {:noreply, state}
       end
 
       defp schedule_work do
@@ -93,6 +94,7 @@ defmodule Pillar.BulkInsertBuffer do
 
       defp do_bulk_insert({_k, pool, table_name, records} = state) do
         # IO.inspect("bulk_insert")
+        # IO.inspect(state)
         resp = pool.async_insert_to_table(table_name, records)
         {
           resp,
