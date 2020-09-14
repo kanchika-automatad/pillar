@@ -51,21 +51,24 @@ defmodule Pillar.BulkInsertBuffer do
         GenServer.call(__MODULE__, :do_insert)
       end
 
-      def force_bulk_insert(data) when is_list(data) do
-        GenServer.call(__MODULE__, :do_insert)
-      end
-
       def records_for_bulk_insert() do
         GenServer.call(__MODULE__, :records_for_bulk_insert)
       end
 
-      def handle_call(:do_insert, _from, state) do
-        new_state = do_bulk_insert(state)
-        {:reply, elem(new_state,0), new_state}
+      def get_status() do
+        pid = GenServer.whereis(__MODULE__)
+        cur_status = :sys.get_state(pid)
+        IO.inspect(length(elem(cur_status,3)))
+        elem(cur_status,0)
+      end
+
+      def handle_call(:do_insert, _from, {rec, pool, table_name, records } =state) do
+          new_state = do_bulk_insert(state)
+          {:reply, elem(new_state,0), new_state}
       end
 
       def handle_cast({:insert, data}, { rec, pool, table_name, records} = state) do
-        {:noreply, { rec, pool, table_name, records ++ List.wrap(data)}}
+        {:noreply, { rec, pool, table_name, Enum.uniq(records ++ List.wrap(data))}}
       end
 
       def handle_call(
@@ -77,10 +80,9 @@ defmodule Pillar.BulkInsertBuffer do
       end
 
       def handle_info(:cron_like_records, state) do
-        # new_state = do_bulk_insert(state)
-        IO.inspect(state)
+        new_state = do_bulk_insert(state)
         schedule_work()
-        {:noreply, state}
+        {:noreply, new_state}
       end
 
       defp schedule_work do
@@ -88,11 +90,15 @@ defmodule Pillar.BulkInsertBuffer do
         Process.send_after(self(), :cron_like_records, :timer.seconds(seconds))
       end
 
-      defp do_bulk_insert({_k, _pool, _table_name, []} = state) do
+      defp do_bulk_insert({{}, _pool, _table_name, []} = state) do
         state
       end
 
-      defp do_bulk_insert({_k, pool, table_name, records} = state) do
+      defp do_bulk_insert({{:ok,""}, _pool, _table_name, _k} = state) do
+        {{}, _pool, _table_name, []}
+      end
+
+      defp do_bulk_insert({{}, pool, table_name, records} = state) do
         # IO.inspect("bulk_insert")
         # IO.inspect(state)
         resp = pool.async_insert_to_table(table_name, records)
