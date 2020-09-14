@@ -95,7 +95,7 @@ defmodule Pillar.BulkInsertBuffer do
       end
 
       defp do_bulk_insert({{:ok,""}, _pool, _table_name, _k} = state) do
-        {{}, _pool, _table_name, []}
+        {{}, _pool, _table_name, _k}
       end
 
       defp do_bulk_insert({{}, pool, table_name, records} = state) do
