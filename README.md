@@ -6,7 +6,7 @@ Clickhouse elixir driver via HTTP connection
 ![hexpm](https://img.shields.io/hexpm/v/pillar.svg)
 
 
-#Specific Changes added by this fork:
+# Specific Changes added by this fork:
  - Converting Genserver cast to call for `execute_sql` function to get the errors thrown by clickhouse on bulk insert level
  - Change the bulk insert done with `cron_like_records` event to maintain the list of entries.
  - The application using this library will call bulk insert function and will be able to handle clickhouse specific errors
