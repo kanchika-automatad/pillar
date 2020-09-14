@@ -94,11 +94,11 @@ defmodule Pillar.BulkInsertBuffer do
         state
       end
 
-      defp do_bulk_insert({{:ok,""}, _pool, _table_name, _k} = state) do
-        {{}, _pool, _table_name, []}
-      end
+      # defp do_bulk_insert({{:ok,""}, _pool, _table_name, _k} = state) do
+      #   {{}, _pool, _table_name, []}
+      # end
 
-      defp do_bulk_insert({{}, pool, table_name, records} = state) do
+      defp do_bulk_insert({_k, pool, table_name, records} = state) do
         # IO.inspect("bulk_insert")
         # IO.inspect(state)
         resp = pool.async_insert_to_table(table_name, records)
