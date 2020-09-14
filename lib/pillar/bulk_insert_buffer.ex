@@ -102,12 +102,21 @@ defmodule Pillar.BulkInsertBuffer do
         # IO.inspect("bulk_insert")
         # IO.inspect(state)
         resp = pool.async_insert_to_table(table_name, records)
-        {
-          resp,
-          pool,
-          table_name,
-          []
-        }
+        if elem(resp,0) == :error and elem(resp,1).status_code != 400 do
+          {
+            resp,
+            pool,
+            table_name,
+            records
+          }
+        else
+          {
+            resp,
+            pool,
+            table_name,
+            []
+          }
+        end
       end
     end
   end
