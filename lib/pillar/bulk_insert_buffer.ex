@@ -62,6 +62,13 @@ defmodule Pillar.BulkInsertBuffer do
         elem(cur_status,0)
       end
 
+      def get_buffer() do
+        pid = GenServer.whereis(__MODULE__)
+        cur_status = :sys.get_state(pid)
+        IO.inspect(length(elem(cur_status,3)))
+        elem(cur_status,3)
+      end
+
       def handle_call(:do_insert, _from, {rec, pool, table_name, records } =state) do
           new_state = do_bulk_insert(state)
           {:reply, elem(new_state,0), new_state}
